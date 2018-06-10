@@ -361,6 +361,8 @@ public class MainWindow : MonoBehaviour
             }
         }
 
+        GUI.matrix = Matrix4x4.identity;
+
         GUI.EndScrollView();
 
         GUI.EndGroup();
@@ -408,6 +410,8 @@ public class MainWindow : MonoBehaviour
                 }
             }
         }
+
+        GUI.matrix = Matrix4x4.identity;
     }
 
     /// <summary>
