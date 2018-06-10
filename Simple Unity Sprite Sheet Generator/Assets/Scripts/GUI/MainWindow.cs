@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Text.RegularExpressions;
 using UnityEngine;
 
 public class MainWindow : MonoBehaviour
@@ -29,20 +30,43 @@ public class MainWindow : MonoBehaviour
     private float ScreenH => Screen.height;
 
     /// <summary>
-    /// The diminsions of the sprite list box.
+    /// The height of the toolbar relative to the current screen height.
     /// </summary>
-    private Rect ListRect => new Rect(8f, 8f, ScreenW / 4f, ScreenH - 16f);
+    private float ToolbarHeight => ScreenH / 24f;
 
     /// <summary>
-    /// The diminsions of the edtior view box.
+    /// The default dimensions of a window.
     /// </summary>
-    private Rect EditorRect => new Rect((ScreenW / 4f) + 16f, 8f, (ScreenW - (ScreenW / 4f) - 24f), ScreenH - 16f);
+    private Rect DefaultWindowRect => new Rect(8f, 16f + (ToolbarHeight), ScreenW - 16f, ScreenH - (ToolbarHeight + 24f));
+
+    /// <summary>
+    /// The dimensions of the toolbar.
+    /// </summary>
+    private Rect ToolbarRect => new Rect(8f, 8f, ScreenW - 16f, ToolbarHeight);
+
+    /// <summary>
+    /// The dimensions of the sprite list box.
+    /// </summary>
+    private Rect ListRect => new Rect(8f, 16f + (ToolbarHeight), ScreenW / 4f, ScreenH - (ToolbarHeight + 24f));
+
+    /// <summary>
+    /// The dimensions of the edtior view box.
+    /// </summary>
+    private Rect EditorRect => new Rect((ScreenW / 4f) + 16f, 16f + (ToolbarHeight), (ScreenW - (ScreenW / 4f) - 24f), ScreenH - (ToolbarHeight + 24f));
+
+    /// <summary>
+    /// The dimensions of the edtior scrollview box.
+    /// </summary>
+    private Rect EditorScrollViewRect => new Rect(0f, 0f, EditorRect.width, EditorRect.height);
 
     /// <summary>
     /// The texture that's currently being dragged.
     /// </summary>
     private Texture2D draggedTexture;
 
+    /// <summary>
+    /// The sprite node that's currently being dragged.
+    /// </summary>
     private SpriteNode draggedNode;
 
     /// <summary>
@@ -55,11 +79,53 @@ public class MainWindow : MonoBehaviour
     /// </summary>
     private bool IsDragging => (draggedTexture || draggedNode != null);
 
+    /// <summary>
+    /// The current displayed GUI window.
+    /// </summary>
+    private Window currentWindow;
+
+    /// <summary>
+    /// Used to record the mouse position on every click.
+    /// </summary>
+    private Vector2 mouseClickPosition;
+
+    /// <summary>
+    /// The name of the new sprite sheet.
+    /// </summary>
+    private string newSpriteSheetName;
+
+    /// <summary>
+    /// The string which represents width of the new sprite sheet.
+    /// </summary>
+    private string newSpriteSheetWidth;
+
+    /// <summary>
+    /// The string which represents height of the new sprite sheet.
+    /// </summary>
+    private string newSpriteSheetHeight;
+
+    /// <summary>
+    /// The regular expression used to clear the number input strings from any invalid charaters.
+    /// </summary>
+    private readonly string regexPattern = "[a-z-A-Z]";
+
+    /// <summary>
+    /// The local regular expression handler.
+    /// </summary>
+    private Regex regex;
+
     private void Awake()
     {
         spriteSheet = new SpriteSheet("debug_sheet", 512, 512, Serializer.LoadTextures(Serializer.TexturesDirectoryPath));
 
         spriteNodes = new List<SpriteNode>();
+
+        regex = new Regex(regexPattern);
+
+        newSpriteSheetWidth = string.Empty;
+        newSpriteSheetHeight = string.Empty;
+
+        currentWindow = Window.SheetDesigner;
     }
 
     private void Update()
@@ -75,15 +141,119 @@ public class MainWindow : MonoBehaviour
         var screenW = Screen.width;
         var screenH = Screen.height;
 
-        GUI.Box(ListRect, string.Empty);
-        GUI.Box(EditorRect, string.Empty);
+        DrawToolbar();
 
-        DrawSpriteList();
-        DrawSpriteNodes();
-        HandleTexturesDragAndDrop();
-        HandleNodesDragAndDrop();
+        switch (currentWindow)
+        {
+            case Window.None:
+                DrawDefaultScreen();
+                break;
+            case Window.SheetSettings:
+                break;
+            case Window.SheetDesigner:
+                DrawBackgrounds();
+                DrawSpriteList();
+                DrawSpriteNodes();
+                HandleTexturesDragAndDrop();
+                HandleNodesDragAndDrop();
+                break;
+            case Window.ExportSettings:
+                break;
+        }
     }
 
+    /// <summary>
+    /// Used to draw the default welcome screen.
+    /// </summary>
+    private void DrawDefaultScreen()
+    {
+        GUI.Box(DefaultWindowRect, string.Empty);
+
+        GUILayout.BeginArea(DefaultWindowRect);
+
+        GUILayout.Box("Welcome to S.U.S.S.G.");
+
+        GUILayout.Box("Create a new sprite sheet");
+
+        GUILayout.BeginHorizontal();
+
+        GUILayout.Box("New Width");
+
+        newSpriteSheetWidth = regex.Replace(GUILayout.TextField(newSpriteSheetWidth), string.Empty);
+
+        GUILayout.EndHorizontal();
+
+        GUILayout.BeginHorizontal();
+
+        GUILayout.Box("New Height");
+
+        newSpriteSheetHeight = regex.Replace(GUILayout.TextField(newSpriteSheetHeight), string.Empty);
+
+        GUILayout.EndHorizontal();
+
+        if (GUILayout.Button("Create Sheet"))
+        {
+            var w = 32;
+            var h = 32;
+
+            int.TryParse(newSpriteSheetWidth, out w);
+            int.TryParse(newSpriteSheetHeight, out h);
+
+            spriteSheet = new SpriteSheet("debug_sheet", w, h, Serializer.LoadTextures(Serializer.TexturesDirectoryPath));
+
+            spriteNodes.Clear();
+        }
+
+        GUILayout.EndArea();
+    }
+
+    private void DrawBackgrounds()
+    {
+        GUI.Box(ListRect, string.Empty);
+        GUI.Box(EditorRect, string.Empty);
+    }
+
+    /// <summary>
+    /// Used to draw the toolbar.
+    /// </summary>
+    private void DrawToolbar()
+    {
+        GUI.Box(ToolbarRect, string.Empty);
+
+        GUILayout.BeginArea(ToolbarRect);
+
+        GUILayout.BeginHorizontal();
+
+        var options = new GUILayoutOption[] { GUILayout.Height(ToolbarHeight) };
+
+        if (GUILayout.Button("Welcome Screen", options))
+        {
+            currentWindow = Window.None;
+        }
+
+        if (GUILayout.Button("Sheet Designer", options))
+        {
+            currentWindow = Window.SheetDesigner;
+        }
+
+        if (GUILayout.Button("Export Sprite Sheet", options))
+        {
+            SpriteSheetGenerator.RenderToTexture(spriteSheet, spriteNodes);
+        }
+
+        if (GUILayout.Button("Exit", options))
+        {
+            Application.Quit();
+        }
+
+        GUILayout.EndHorizontal();
+
+        GUILayout.EndArea();
+    }
+
+    /// <summary>
+    /// Used to draw the loaded sprites list.
+    /// </summary>
     private void DrawSpriteList()
     {
         GUI.BeginGroup(ListRect);
@@ -127,13 +297,16 @@ public class MainWindow : MonoBehaviour
         GUI.EndGroup();
     }
 
+    /// <summary>
+    /// Used to draw the sprite editor design nodes.
+    /// </summary>
     private void DrawSpriteNodes()
     {
         GUI.BeginGroup(EditorRect);
 
         var nodeViewRect = new Rect(0f, 0f, spriteSheet.Width, spriteSheet.Height);
 
-        editorVector = GUI.BeginScrollView(new Rect(0f, 0f, EditorRect.width, EditorRect.height), editorVector, nodeViewRect);
+        editorVector = GUI.BeginScrollView(EditorScrollViewRect, editorVector, nodeViewRect);
 
         GUI.Box(nodeViewRect, string.Empty);
 
@@ -154,12 +327,12 @@ public class MainWindow : MonoBehaviour
                 };
 
                 GUI.DrawTexture(nodesRect, currentNode.Texture);
-                
+
                 // BEGIN DEBUG CODE.
 
                 GUI.color = Color.red;
-             
-                GUI.Label(new Rect(nodesRect.x+8f, nodesRect.y+8f, 128f, 32f), currentNode.Position.ToString());
+
+                GUI.Label(new Rect(nodesRect.x + 8f, nodesRect.y + 8f, 128f, 32f), currentNode.Position.ToString());
 
                 GUI.color = Color.white;
 
@@ -181,6 +354,9 @@ public class MainWindow : MonoBehaviour
         GUI.EndGroup();
     }
 
+    /// <summary>
+    /// Used to handle & perform drag & drop operations on the texture list.
+    /// </summary>
     private void HandleTexturesDragAndDrop()
     {
         var e = Event.current;
@@ -206,8 +382,8 @@ public class MainWindow : MonoBehaviour
             {
                 if (EditorRect.Contains(mousePosition))
                 {
-                    var relativeX = (int)((mousePosition.x - EditorRect.x) - draggedTexture.width / 2f);
-                    var relativeY = (int)((mousePosition.y - EditorRect.y) - draggedTexture.height / 2f);
+                    var relativeX = (int)(((mousePosition.x - EditorRect.x) + editorVector.x) - w / 2f);
+                    var relativeY = (int)(((mousePosition.y - EditorRect.y) + editorVector.y) - h / 2f);
 
                     spriteNodes.Add(new SpriteNode()
                     {
@@ -222,6 +398,9 @@ public class MainWindow : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// Used to handle & perform drag & drop operations on the sprite nodes in the edtior design view.
+    /// </summary>
     private void HandleNodesDragAndDrop()
     {
         var e = Event.current;
@@ -249,8 +428,8 @@ public class MainWindow : MonoBehaviour
             {
                 if (EditorRect.Contains(mousePosition))
                 {
-                    var relativeX = (int)((mousePosition.x - EditorRect.x) - nodeTexture.width / 2f);
-                    var relativeY = (int)((mousePosition.y - EditorRect.y) - nodeTexture.height / 2f);
+                    var relativeX = (int)(((mousePosition.x - EditorRect.x) + editorVector.x) - w / 2f);
+                    var relativeY = (int)(((mousePosition.y - EditorRect.y) + editorVector.y) - h / 2f);
 
                     spriteNodes.Add(new SpriteNode()
                     {
