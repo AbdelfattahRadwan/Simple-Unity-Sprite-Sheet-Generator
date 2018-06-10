@@ -25,13 +25,10 @@ public static class SpriteSheetGenerator
         }
 
         // Create a new texture and set it's width and height to the sheet's width and height.
-        var texture = new Texture2D(w, h)
+        var texture = new Texture2D(w, h, TextureFormat.RGBA32, false)
         {
             // Set it's name to sheet name.
             name = sheet.Name,
-            
-            // Tell the texture that the alpha of the color equals it's transparency.
-            alphaIsTransparency = true
         };
 
         // Create a new color array.

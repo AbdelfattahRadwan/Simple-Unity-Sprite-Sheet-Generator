@@ -54,10 +54,9 @@ public static class Serializer
             {
                 var bytes = File.ReadAllBytes(filePath);
 
-                var texture = new Texture2D(4, 4)
+                var texture = new Texture2D(4, 4, TextureFormat.RGBA32, false)
                 {
-                    name = fileName,
-                    alphaIsTransparency = true
+                    name = fileName
                 };
 
                 texture.LoadImage(bytes, false);
