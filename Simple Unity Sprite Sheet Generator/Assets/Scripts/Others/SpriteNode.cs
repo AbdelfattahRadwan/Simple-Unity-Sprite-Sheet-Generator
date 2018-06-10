@@ -10,7 +10,7 @@ public class SpriteNode
     /// <summary>
     /// The position of this sprite node.
     /// </summary>
-    public Vector2Int Position { get; set; }
+    public Vector2 Position { get; set; }
 
     /// <summary>
     /// The texture of this sprite node.
@@ -23,7 +23,7 @@ public class SpriteNode
     /// <param name="name"></param>
     /// <param name="position"></param>
     /// <param name="texture"></param>
-    public SpriteNode(string name, Vector2Int position, Texture2D texture)
+    public SpriteNode(string name, Vector2 position, Texture2D texture)
     {
         Name = name;
         Position = position;

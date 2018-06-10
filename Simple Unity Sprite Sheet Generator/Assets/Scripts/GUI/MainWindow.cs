@@ -72,11 +72,6 @@ public class MainWindow : MonoBehaviour
     private SpriteNode draggedNode;
 
     /// <summary>
-    /// Represents the current nodes that are on the current sprite sheet.
-    /// </summary>
-    private List<SpriteNode> spriteNodes;
-
-    /// <summary>
     /// Is the user dragging a texture or a sprite node?
     /// </summary>
     private bool IsDragging => (draggedTexture || draggedNode != null);
@@ -116,11 +111,17 @@ public class MainWindow : MonoBehaviour
     /// </summary>
     private Regex regex;
 
+    /// <summary>
+    /// The position from which the last dragged node was before being dragged.
+    /// </summary>
+    private Vector2 lastNodePosition;
+
     private void Awake()
     {
-        spriteSheet = new SpriteSheet("debug_sheet", 512, 512, Serializer.LoadTextures(Serializer.TexturesDirectoryPath));
-
-        spriteNodes = new List<SpriteNode>();
+        spriteSheet = new SpriteSheet("debug_sheet", 512, 512, Serializer.LoadTextures(Serializer.TexturesDirectoryPath))
+        {
+            SpriteNodes = new List<SpriteNode>()
+        };
 
         regex = new Regex(regexPattern);
 
@@ -134,7 +135,7 @@ public class MainWindow : MonoBehaviour
     {
         if (Input.GetKeyDown(KeyCode.F5))
         {
-            SpriteSheetGenerator.RenderToTexture(spriteSheet, spriteNodes);
+            SpriteSheetGenerator.RenderToTexture(spriteSheet, spriteSheet.SpriteNodes);
         }
     }
 
@@ -152,8 +153,6 @@ public class MainWindow : MonoBehaviour
             case Window.None:
                 DrawDefaultScreen();
                 break;
-            case Window.SheetSettings:
-                break;
             case Window.SheetDesigner:
                 DrawBackgrounds();
                 DrawSpriteList();
@@ -162,6 +161,8 @@ public class MainWindow : MonoBehaviour
                 HandleNodesDragAndDrop();
                 break;
             case Window.ExportSettings:
+                break;
+            case Window.Help:
                 break;
         }
     }
@@ -205,7 +206,7 @@ public class MainWindow : MonoBehaviour
 
             spriteSheet = new SpriteSheet("debug_sheet", w, h, Serializer.LoadTextures(Serializer.TexturesDirectoryPath));
 
-            spriteNodes.Clear();
+            spriteSheet.SpriteNodes.Clear();
         }
 
         GUILayout.EndArea();
@@ -240,9 +241,22 @@ public class MainWindow : MonoBehaviour
             currentWindow = Window.SheetDesigner;
         }
 
-        if (GUILayout.Button("Export Sprite Sheet", options))
+        if (currentWindow.Equals(Window.SheetDesigner))
         {
-            SpriteSheetGenerator.RenderToTexture(spriteSheet, spriteNodes);
+            if (GUILayout.Button("Arrange Nodes"))
+            {
+                spriteSheet.ArrangeNodes();
+            }
+
+            if (GUILayout.Button("Reload Texture From Disk"))
+            {
+                spriteSheet.Textures = Serializer.LoadTextures(Serializer.TexturesDirectoryPath);
+            }
+
+            if (GUILayout.Button("Export Sprite Sheet", options))
+            {
+                SpriteSheetGenerator.RenderToTexture(spriteSheet, spriteSheet.SpriteNodes);
+            }
         }
 
         if (GUILayout.Button("Exit", options))
@@ -314,13 +328,13 @@ public class MainWindow : MonoBehaviour
 
         GUI.Box(nodeViewRect, string.Empty);
 
-        if (spriteNodes.Count > 0)
+        if (spriteSheet.SpriteNodes.Count > 0)
         {
             var e = Event.current;
 
-            for (int i = 0; i < spriteNodes.Count; i++)
+            for (int i = 0; i < spriteSheet.SpriteNodes.Count; i++)
             {
-                var currentNode = spriteNodes[i];
+                var currentNode = spriteSheet.SpriteNodes[i];
 
                 var w = currentNode.Texture.width;
                 var h = currentNode.Texture.height;
@@ -348,14 +362,16 @@ public class MainWindow : MonoBehaviour
                 {
                     if (!IsDragging && e.type.Equals(EventType.MouseDrag) && e.button == 0)
                     {
+                        lastNodePosition = currentNode.Position;
+
                         draggedNode = currentNode;
 
-                        spriteNodes.RemoveAt(i);
+                        spriteSheet.SpriteNodes.RemoveAt(i);
                     }
 
                     if (e.type.Equals(EventType.MouseDown) && e.button == 1 && e.modifiers.Equals(EventModifiers.Shift))
                     {
-                        spriteNodes.RemoveAt(i);
+                        spriteSheet.SpriteNodes.RemoveAt(i);
                     }
                 }
             }
@@ -399,13 +415,17 @@ public class MainWindow : MonoBehaviour
                     var relativeX = (int)(((mousePosition.x - EditorRect.x) + editorVector.x) - w / 2f);
                     var relativeY = (int)(((mousePosition.y - EditorRect.y) + editorVector.y) - h / 2f);
 
-                    spriteNodes.Add(new SpriteNode()
+                    spriteSheet.SpriteNodes.Add(new SpriteNode()
                     {
                         Name = draggedTexture.name,
                         Position = new Vector2Int(relativeX, relativeY),
                         Texture = draggedTexture
                     });
 
+                    draggedTexture = null;
+                }
+                else
+                {
                     draggedTexture = null;
                 }
             }
@@ -447,10 +467,21 @@ public class MainWindow : MonoBehaviour
                     var relativeX = (int)(((mousePosition.x - EditorRect.x) + editorVector.x) - w / 2f);
                     var relativeY = (int)(((mousePosition.y - EditorRect.y) + editorVector.y) - h / 2f);
 
-                    spriteNodes.Add(new SpriteNode()
+                    spriteSheet.SpriteNodes.Add(new SpriteNode()
                     {
                         Name = nodeTexture.name,
                         Position = new Vector2Int(relativeX, relativeY),
+                        Texture = nodeTexture
+                    });
+
+                    draggedNode = null;
+                }
+                else
+                {
+                    spriteSheet.SpriteNodes.Add(new SpriteNode()
+                    {
+                        Name = nodeTexture.name,
+                        Position = lastNodePosition,
                         Texture = nodeTexture
                     });
 

@@ -34,6 +34,29 @@ public class SpriteSheet
     [Index(4)] public virtual int TextureCount => Textures.Count;
 
     /// <summary>
+    /// The sprite nodes on the sprite sheet.
+    /// </summary>
+    [IgnoreFormat] public List<SpriteNode> SpriteNodes { get; set; }
+
+    /// <summary>
+    /// Arranges the sprite nodes on the sprite sheet according to their size.
+    /// </summary>
+    public void ArrangeNodes()
+    {
+        if (SpriteNodes.Count == 0)
+        {
+            return;
+        }
+
+        for (int i = 0; i < SpriteNodes.Count; ++i)
+        {
+            var currentNode = SpriteNodes[i];
+
+            currentNode.Position = new Vector2(i * (currentNode.Texture.width / 2f), i * (currentNode.Texture.height / 2f));
+        }
+    }
+
+    /// <summary>
     /// Creates a new sprite sheet with the specified name, width, height and texture set.
     /// </summary>
     /// <param name="name"></param>

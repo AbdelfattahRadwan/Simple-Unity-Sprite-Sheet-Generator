@@ -47,8 +47,8 @@ public static class Serializer
 
             var fileName = Path.GetFileNameWithoutExtension(filePath);
 
-            var isJPG = string.Compare(extension, ".jpg") == 0;
-            var isPNG = string.Compare(extension, ".png") == 0;
+            var isJPG = string.Compare(extension, ".jpg", true) == 0;
+            var isPNG = string.Compare(extension, ".png", true) == 0;
 
             if (isJPG || isPNG)
             {

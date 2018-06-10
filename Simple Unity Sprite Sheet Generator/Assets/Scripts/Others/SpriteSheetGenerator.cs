@@ -53,10 +53,10 @@ public static class SpriteSheetGenerator
             var colors = currentNode.Texture.GetPixels();
 
             // The X position of the node (texture) in the texture sheet.
-            var x1 = currentNode.Position.x;
+            var x1 = (int)currentNode.Position.x;
 
             // The Y position of the node (texture) in the texture sheet.
-            var y1 = currentNode.Position.y;
+            var y1 = (int)currentNode.Position.y;
 
             // The width of the node (texture).
             var x2 = currentNode.Texture.width;
