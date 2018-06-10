@@ -32,6 +32,8 @@
     "com.unity.modules.video": "exclude",
     "com.unity.modules.vr": "exclude",
     "com.unity.modules.wind": "exclude",
-    "com.unity.modules.xr": "exclude"
+    "com.unity.modules.xr": "exclude",
+    "com.unity.modules.screencapture": "exclude",
+    "com.unity.modules.jsonserialize": "exclude"
   }
 }

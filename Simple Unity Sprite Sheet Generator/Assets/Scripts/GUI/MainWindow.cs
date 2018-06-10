@@ -4,6 +4,8 @@ using UnityEngine;
 
 public class MainWindow : MonoBehaviour
 {
+    [SerializeField] private GUISkin skin;
+
     /// <summary>
     /// The current sprite sheet.
     /// </summary>
@@ -138,6 +140,8 @@ public class MainWindow : MonoBehaviour
 
     private void OnGUI()
     {
+        GUI.skin = skin ?? GUI.skin;
+
         var screenW = Screen.width;
         var screenH = Screen.height;
 
@@ -318,6 +322,16 @@ public class MainWindow : MonoBehaviour
             {
                 var currentNode = spriteNodes[i];
 
+                var w = currentNode.Texture.width;
+                var h = currentNode.Texture.height;
+
+                var position = currentNode.Position;
+
+                position.x = Mathf.Clamp(position.x, 0, spriteSheet.Width);
+                position.y = Mathf.Clamp(position.y, 0, spriteSheet.Height);
+
+                currentNode.Position = position;
+
                 var nodesRect = new Rect()
                 {
                     x = currentNode.Position.x,
@@ -327,16 +341,6 @@ public class MainWindow : MonoBehaviour
                 };
 
                 GUI.DrawTexture(nodesRect, currentNode.Texture);
-
-                // BEGIN DEBUG CODE.
-
-                GUI.color = Color.red;
-
-                GUI.Label(new Rect(nodesRect.x + 8f, nodesRect.y + 8f, 128f, 32f), currentNode.Position.ToString());
-
-                GUI.color = Color.white;
-
-                // END DEBUG CODE.
 
                 var mousePosition = e.mousePosition;
 
