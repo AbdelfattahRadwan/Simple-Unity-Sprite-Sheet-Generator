@@ -271,7 +271,7 @@ public class MainWindow : MonoBehaviour
 
         GUI.Box(headerRect, $"Textures [{textureCount}]");
 
-        var scrollViewBoxRect = new Rect(4f, 40f, localWidth - 8f, localHeight - 8f);
+        var scrollViewBoxRect = new Rect(4f, 40f, localWidth - 8f, localHeight - 32f);
 
         var scrollViewDisplayRect = new Rect(0f, 0f, localWidth - 8f, (textureCount * 34f) + 24f);
 
@@ -344,11 +344,19 @@ public class MainWindow : MonoBehaviour
 
                 var mousePosition = e.mousePosition;
 
-                if (!IsDragging && e.type.Equals(EventType.MouseDrag) && nodesRect.Contains(mousePosition))
+                if (nodesRect.Contains(mousePosition))
                 {
-                    draggedNode = currentNode;
+                    if (!IsDragging && e.type.Equals(EventType.MouseDrag) && e.button == 0)
+                    {
+                        draggedNode = currentNode;
 
-                    spriteNodes.RemoveAt(i);
+                        spriteNodes.RemoveAt(i);
+                    }
+
+                    if (e.type.Equals(EventType.MouseDown) && e.button == 1 && e.modifiers.Equals(EventModifiers.Shift))
+                    {
+                        spriteNodes.RemoveAt(i);
+                    }
                 }
             }
         }
