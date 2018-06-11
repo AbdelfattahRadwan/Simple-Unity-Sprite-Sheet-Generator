@@ -1,30 +1,30 @@
-﻿using ZeroFormatter;
+﻿using System;
 
 /// <summary>
 /// Represents a serializable texture used when creating sprite sheets.
 /// </summary>
-[ZeroFormattable]
+[Serializable]
 public class SpriteSheetTexture
 {
     /// <summary>
     /// The name of the texture.
     /// </summary>
-    [Index(0)] public virtual string Name { get; set; }
+    public string Name { get; set; }
 
     /// <summary>
     /// The width of the texture.
     /// </summary>
-    [Index(1)] public virtual int Width { get; set; }
+    public int Width { get; set; }
 
     /// <summary>
     /// The height of the texture.
     /// </summary>
-    [Index(2)] public virtual int Height { get; set; }
+    public int Height { get; set; }
 
     /// <summary>
     /// The colors (or pixels) of the texture.
     /// </summary>
-    [Index(3)] public virtual byte[] Pixels { get; set; }
+    public byte[] Pixels { get; set; }
 
     /// <summary>
     /// Creates a new texture with the specified name, width, height and color (or pixel) data.
@@ -41,5 +41,8 @@ public class SpriteSheetTexture
         Pixels = pixels;
     }
 
+    /// <summary>
+    /// Creates a new sprite sheet texture.
+    /// </summary>
     public SpriteSheetTexture() { }
 }

@@ -4,4 +4,5 @@
     SheetDesigner,
     ExportSettings,
     Help,
+    SavedFilesBrowser,
 }

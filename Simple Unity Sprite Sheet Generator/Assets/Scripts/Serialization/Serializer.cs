@@ -1,7 +1,7 @@
-﻿using System.Collections.Generic;
+﻿using Newtonsoft.Json;
+using System.Collections.Generic;
 using System.IO;
 using UnityEngine;
-using ZeroFormatter;
 
 /// <summary>
 /// A class used to save/load projects, sprite sheets and textures.
@@ -23,14 +23,19 @@ public static class Serializer
     /// </summary>
     public static string SpriteSheetsOutputPath => "bin/output";
 
-    /// <summary>
-    /// Loads all texture in jpg or png in the specified <see cref="TexturesDirectoryPath"/>.
-    /// </summary>
-    /// <param name="path"></param>
-    /// <returns></returns>
-    public static List<Texture2D> LoadTextures(string path)
+    public static void RegisterZeroFormatterTypes()
     {
-        var files = new DirectoryInfo(path).GetFiles();
+        ///TODO: Added serialization types...
+    }
+
+    /// <summary>
+    /// Loads all texture in jpg or png in the specified the specified directory.
+    /// </summary>
+    /// <param name="directory"></param>
+    /// <returns></returns>
+    public static List<Texture2D> LoadTextures(string directory)
+    {
+        var files = new DirectoryInfo(directory).GetFiles();
 
         if (files.Length == 0)
         {
@@ -54,7 +59,7 @@ public static class Serializer
             {
                 var bytes = File.ReadAllBytes(filePath);
 
-                var texture = new Texture2D(4, 4, TextureFormat.RGBA32, false)
+                var texture = new Texture2D(4, 4, TextureFormat.RGBA32, false, false)
                 {
                     name = fileName
                 };
@@ -69,12 +74,42 @@ public static class Serializer
     }
 
     /// <summary>
-    /// Saves a sprite sheet to the <see cref="SavesDirectoryPath"/>.
+    /// Saves a sprite sheet to the specified output directory.
     /// </summary>
     /// <param name="spriteSheet"></param>
-    public static void Save(SpriteSheet spriteSheet)
+    public static void Save(SpriteSheet spriteSheet, string outputDirectory)
     {
-        var bytes = ZeroFormatterSerializer.Serialize(spriteSheet);
+        if (spriteSheet == null || string.IsNullOrEmpty(outputDirectory))
+        {
+            return;
+        }
 
+        var path = Path.Combine(outputDirectory, $"{spriteSheet.Name}.json");
+
+        var json = JsonConvert.SerializeObject(spriteSheet, Formatting.Indented);
+
+        File.WriteAllText(path, json);
+    }
+
+    /// <summary>
+    /// Loads a sprite sheet from the specified filePath.
+    /// </summary>
+    /// <param name="spriteSheet"></param>
+    public static void Load(out SpriteSheet spriteSheet, string filePath)
+    {
+        if (string.IsNullOrEmpty(filePath))
+        {
+            spriteSheet = new SpriteSheet("empty", 512, 512);
+            return;
+        }
+
+        var json = File.ReadAllText(Path.Combine(filePath));
+
+        spriteSheet = JsonConvert.DeserializeObject<SpriteSheet>(json);
+
+        foreach (var sprite in spriteSheet.SpriteNodes)
+        {
+            sprite.InitializeTextureFromData();
+        }
     }
 }

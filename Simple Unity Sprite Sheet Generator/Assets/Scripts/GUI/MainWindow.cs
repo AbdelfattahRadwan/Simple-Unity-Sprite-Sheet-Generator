@@ -1,15 +1,27 @@
 ﻿using System.Collections.Generic;
+using System.IO;
 using System.Text.RegularExpressions;
 using UnityEngine;
 
 public class MainWindow : MonoBehaviour
 {
+    public static MainWindow Instance { get; private set; }
+
     [SerializeField] private GUISkin skin;
 
     /// <summary>
     /// The current sprite sheet.
     /// </summary>
     private SpriteSheet spriteSheet;
+
+    /// <summary>
+    /// Returns the currently open sprite sheet in the sheet designer.
+    /// </summary>
+    /// <returns></returns>
+    public SpriteSheet GetOpenSpriteSheet()
+    {
+        return spriteSheet;
+    }
 
     /// <summary>
     /// The vector used for drawing the sprite list scrollview.
@@ -20,6 +32,11 @@ public class MainWindow : MonoBehaviour
     /// The vector used for drawing the editor scrollview.
     /// </summary>
     private Vector2 editorVector;
+
+    /// <summary>
+    /// The vector used for drawing the file browser scrollview.
+    /// </summary>
+    private Vector2 fileBrowserVector;
 
     /// <summary>
     /// The width of the device screen. (read-only)
@@ -82,11 +99,6 @@ public class MainWindow : MonoBehaviour
     private Window currentWindow;
 
     /// <summary>
-    /// Used to record the mouse position on every click.
-    /// </summary>
-    private Vector2 mouseClickPosition;
-
-    /// <summary>
     /// The name of the new sprite sheet.
     /// </summary>
     private string newSpriteSheetName;
@@ -112,13 +124,63 @@ public class MainWindow : MonoBehaviour
     private Regex regex;
 
     /// <summary>
-    /// The position from which the last dragged node was before being dragged.
+    /// The position of the last dragged sprite node on the x-axis.
     /// </summary>
-    private Vector2 lastNodePosition;
+    private float lastNodeX;
+
+    /// <summary>
+    /// The position of the last dragged sprite node on the y-axis.
+    /// </summary>
+    private float lastNodeY;
+
+    /// <summary>
+    /// Is the user pressing any shift key?
+    /// </summary>
+    private bool IsPressingShift => Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift);
+
+    /// <summary>
+    /// Is the user pressing any shift key?
+    /// </summary>
+    private bool IsPressingCtrl => Input.GetKey(KeyCode.LeftControl) || Input.GetKey(KeyCode.RightControl);
+
+    /// <summary>
+    /// A list containing all of the textures located in <see cref="Serializer.TexturesDirectoryPath"/>.
+    /// </summary>
+    private List<Texture2D> loadedTextures;
+
+    /// <summary>
+    /// Returns the currently loaded editor textures.
+    /// </summary>
+    /// <returns></returns>
+    public List<Texture2D> GetLoadedTextures()
+    {
+        return loadedTextures;
+    }
+
+    /// <summary>
+    /// The file browser temporary data.
+    /// </summary>
+    private FileInfo[] fileBrowserTemp;
+
+    /// <summary>
+    /// Should the command manager window be drawn?
+    /// </summary>
+    private bool showCommandManager;
+
+    /// <summary>
+    /// The rect that the commands window use.
+    /// </summary>
+    private Rect commandWindowRect;
 
     private void Awake()
     {
-        spriteSheet = new SpriteSheet("debug_sheet", 512, 512, Serializer.LoadTextures(Serializer.TexturesDirectoryPath))
+        Instance = this;
+
+        loadedTextures = Serializer.LoadTextures(Serializer.TexturesDirectoryPath);
+
+        fileBrowserTemp = new FileInfo[0];
+
+        spriteSheet = new SpriteSheet("new_sprite_sheet", 512, 512)
         {
             SpriteNodes = new List<SpriteNode>()
         };
@@ -128,33 +190,23 @@ public class MainWindow : MonoBehaviour
         newSpriteSheetWidth = string.Empty;
         newSpriteSheetHeight = string.Empty;
 
-        currentWindow = Window.SheetDesigner;
-    }
-
-    private void Update()
-    {
-        if (Input.GetKeyDown(KeyCode.F5))
-        {
-            SpriteSheetGenerator.RenderToTexture(spriteSheet, spriteSheet.SpriteNodes);
-        }
+        currentWindow = Window.None;
     }
 
     private void OnGUI()
     {
         GUI.skin = skin ?? GUI.skin;
 
-        var screenW = Screen.width;
-        var screenH = Screen.height;
-
         DrawToolbar();
 
         switch (currentWindow)
         {
             case Window.None:
+                DrawBackgrounds(DefaultWindowRect);
                 DrawDefaultScreen();
                 break;
             case Window.SheetDesigner:
-                DrawBackgrounds();
+                DrawBackgrounds(ListRect, EditorRect);
                 DrawSpriteList();
                 DrawSpriteNodes();
                 HandleTexturesDragAndDrop();
@@ -163,6 +215,12 @@ public class MainWindow : MonoBehaviour
             case Window.ExportSettings:
                 break;
             case Window.Help:
+                DrawBackgrounds(DefaultWindowRect);
+                DrawHelpScreen();
+                break;
+            case Window.SavedFilesBrowser:
+                DrawBackgrounds(DefaultWindowRect);
+                DrawSavedFilesBrowser();
                 break;
         }
     }
@@ -172,8 +230,6 @@ public class MainWindow : MonoBehaviour
     /// </summary>
     private void DrawDefaultScreen()
     {
-        GUI.Box(DefaultWindowRect, string.Empty);
-
         GUILayout.BeginArea(DefaultWindowRect);
 
         GUILayout.Box("Welcome to S.U.S.S.G.");
@@ -182,7 +238,15 @@ public class MainWindow : MonoBehaviour
 
         GUILayout.BeginHorizontal();
 
-        GUILayout.Box("New Width");
+        GUILayout.Box("Sheet Name");
+
+        newSpriteSheetName = GUILayout.TextField(newSpriteSheetName);
+
+        GUILayout.EndHorizontal();
+
+        GUILayout.BeginHorizontal();
+
+        GUILayout.Box("Width");
 
         newSpriteSheetWidth = regex.Replace(GUILayout.TextField(newSpriteSheetWidth), string.Empty);
 
@@ -190,7 +254,7 @@ public class MainWindow : MonoBehaviour
 
         GUILayout.BeginHorizontal();
 
-        GUILayout.Box("New Height");
+        GUILayout.Box("Height");
 
         newSpriteSheetHeight = regex.Replace(GUILayout.TextField(newSpriteSheetHeight), string.Empty);
 
@@ -198,24 +262,27 @@ public class MainWindow : MonoBehaviour
 
         if (GUILayout.Button("Create Sheet"))
         {
-            var w = 32;
-            var h = 32;
+            var w = 256;
+            var h = 256;
 
             int.TryParse(newSpriteSheetWidth, out w);
             int.TryParse(newSpriteSheetHeight, out h);
 
-            spriteSheet = new SpriteSheet("debug_sheet", w, h, Serializer.LoadTextures(Serializer.TexturesDirectoryPath));
-
-            spriteSheet.SpriteNodes.Clear();
+            spriteSheet = new SpriteSheet(newSpriteSheetName, w, h);
         }
 
         GUILayout.EndArea();
     }
 
-    private void DrawBackgrounds()
+    /// <summary>
+    /// Draws a box for each specified rectangle.
+    /// </summary>
+    private void DrawBackgrounds(params Rect[] rects)
     {
-        GUI.Box(ListRect, string.Empty);
-        GUI.Box(EditorRect, string.Empty);
+        for (int i = 0; i < rects.Length; i++)
+        {
+            GUI.Box(rects[i], string.Empty);
+        }
     }
 
     /// <summary>
@@ -243,19 +310,29 @@ public class MainWindow : MonoBehaviour
 
         if (currentWindow.Equals(Window.SheetDesigner))
         {
-            if (GUILayout.Button("Arrange Nodes"))
+            if (GUILayout.Button("Reload Texture From Disk", options))
             {
-                spriteSheet.ArrangeNodes();
+                loadedTextures = Serializer.LoadTextures(Serializer.TexturesDirectoryPath);
             }
 
-            if (GUILayout.Button("Reload Texture From Disk"))
+            if (GUILayout.Button("Export as JPG", options))
             {
-                spriteSheet.Textures = Serializer.LoadTextures(Serializer.TexturesDirectoryPath);
+                SpriteSheetGenerator.RenderToTexture(spriteSheet, spriteSheet.SpriteNodes, OutputImageFormat.JPG);
             }
 
-            if (GUILayout.Button("Export Sprite Sheet", options))
+            if (GUILayout.Button("Export as PNG", options))
             {
-                SpriteSheetGenerator.RenderToTexture(spriteSheet, spriteSheet.SpriteNodes);
+                SpriteSheetGenerator.RenderToTexture(spriteSheet, spriteSheet.SpriteNodes, OutputImageFormat.PNG);
+            }
+
+            if (GUILayout.Button("Save Sprite Sheet", options))
+            {
+                Serializer.Save(spriteSheet, Serializer.SavesDirectoryPath);
+            }
+
+            if (GUILayout.Button("Load Sprite Sheet", options))
+            {
+                currentWindow = Window.SavedFilesBrowser;
             }
         }
 
@@ -281,7 +358,7 @@ public class MainWindow : MonoBehaviour
 
         var headerRect = new Rect(4f, 4f, localWidth - 8f, 32f);
 
-        var textureCount = spriteSheet.TextureCount;
+        var textureCount = loadedTextures.Count;
 
         GUI.Box(headerRect, $"Textures [{textureCount}]");
 
@@ -299,13 +376,13 @@ public class MainWindow : MonoBehaviour
 
             if (i < textureCount)
             {
-                GUI.Box(textureListRect, spriteSheet.Textures[i].name);
+                GUI.Box(textureListRect, loadedTextures[i].name);
 
                 var mousePosition = e.mousePosition;
 
                 if (!IsDragging && e.type.Equals(EventType.MouseDrag) && textureListRect.Contains(mousePosition))
                 {
-                    draggedTexture = spriteSheet.Textures[i];
+                    draggedTexture = loadedTextures[i];
                 }
             }
         }
@@ -339,17 +416,13 @@ public class MainWindow : MonoBehaviour
                 var w = currentNode.Texture.width;
                 var h = currentNode.Texture.height;
 
-                var position = currentNode.Position;
-
-                position.x = Mathf.Clamp(position.x, 0, spriteSheet.Width);
-                position.y = Mathf.Clamp(position.y, 0, spriteSheet.Height);
-
-                currentNode.Position = position;
+                currentNode.X = Mathf.Clamp(currentNode.X, 0, spriteSheet.Width - w);
+                currentNode.Y = Mathf.Clamp(currentNode.Y, 0, spriteSheet.Height - h);
 
                 var nodesRect = new Rect()
                 {
-                    x = currentNode.Position.x,
-                    y = currentNode.Position.y,
+                    x = currentNode.X,
+                    y = currentNode.Y,
                     width = currentNode.Texture.width,
                     height = currentNode.Texture.height
                 };
@@ -362,14 +435,20 @@ public class MainWindow : MonoBehaviour
                 {
                     if (!IsDragging && e.type.Equals(EventType.MouseDrag) && e.button == 0)
                     {
-                        lastNodePosition = currentNode.Position;
+                        lastNodeX = currentNode.X;
+                        lastNodeY = currentNode.Y;
 
                         draggedNode = currentNode;
 
                         spriteSheet.SpriteNodes.RemoveAt(i);
                     }
 
-                    if (e.type.Equals(EventType.MouseDown) && e.button == 1 && e.modifiers.Equals(EventModifiers.Shift))
+                    if (e.type.Equals(EventType.MouseDown) && e.button == 1 && IsPressingShift)
+                    {
+                        spriteSheet.SpriteNodes.RemoveAt(i);
+                    }
+
+                    if (Input.GetMouseButton(1) && IsPressingShift && IsPressingCtrl)
                     {
                         spriteSheet.SpriteNodes.RemoveAt(i);
                     }
@@ -415,12 +494,7 @@ public class MainWindow : MonoBehaviour
                     var relativeX = (int)(((mousePosition.x - EditorRect.x) + editorVector.x) - w / 2f);
                     var relativeY = (int)(((mousePosition.y - EditorRect.y) + editorVector.y) - h / 2f);
 
-                    spriteSheet.SpriteNodes.Add(new SpriteNode()
-                    {
-                        Name = draggedTexture.name,
-                        Position = new Vector2Int(relativeX, relativeY),
-                        Texture = draggedTexture
-                    });
+                    spriteSheet.SpriteNodes.Add(new SpriteNode(draggedTexture.name, relativeX, relativeY, 1f, 1f, draggedTexture));
 
                     draggedTexture = null;
                 }
@@ -464,30 +538,57 @@ public class MainWindow : MonoBehaviour
             {
                 if (EditorRect.Contains(mousePosition))
                 {
-                    var relativeX = (int)(((mousePosition.x - EditorRect.x) + editorVector.x) - w / 2f);
-                    var relativeY = (int)(((mousePosition.y - EditorRect.y) + editorVector.y) - h / 2f);
+                    var relativeX = Mathf.FloorToInt(((mousePosition.x - EditorRect.x) + editorVector.x) - w / 2f);
+                    var relativeY = Mathf.FloorToInt(((mousePosition.y - EditorRect.y) + editorVector.y) - h / 2f);
 
-                    spriteSheet.SpriteNodes.Add(new SpriteNode()
-                    {
-                        Name = nodeTexture.name,
-                        Position = new Vector2Int(relativeX, relativeY),
-                        Texture = nodeTexture
-                    });
+                    spriteSheet.SpriteNodes.Add(new SpriteNode(nodeTexture.name, relativeX, relativeY, 1f, 1f, nodeTexture));
 
                     draggedNode = null;
                 }
                 else
                 {
-                    spriteSheet.SpriteNodes.Add(new SpriteNode()
-                    {
-                        Name = nodeTexture.name,
-                        Position = lastNodePosition,
-                        Texture = nodeTexture
-                    });
+                    spriteSheet.SpriteNodes.Add(new SpriteNode(nodeTexture.name, lastNodeX, lastNodeY, 1f, 1f, nodeTexture));
 
                     draggedNode = null;
                 }
             }
         }
+    }
+
+    /// <summary>
+    /// Used to draw a simple help screen to help users getting started.
+    /// </summary>
+    private void DrawHelpScreen()
+    {
+
+    }
+
+    /// <summary>
+    /// Used to draw a file browser which is used to display saved files.
+    /// </summary>
+    private void DrawSavedFilesBrowser()
+    {
+        GUILayout.BeginArea(DefaultWindowRect);
+
+        GUILayout.Box("Load a saved sprite sheet");
+
+        if (GUILayout.Button("Refresh"))
+        {
+            fileBrowserTemp = new DirectoryInfo(Serializer.SavesDirectoryPath).GetFiles();
+        }
+
+        fileBrowserVector = GUILayout.BeginScrollView(fileBrowserVector);
+
+        for (int i = 0; i < fileBrowserTemp.Length; i++)
+        {
+            if (GUILayout.Button($"{i + 1} - {fileBrowserTemp[i].FullName}"))
+            {
+                Serializer.Load(out spriteSheet, fileBrowserTemp[i].FullName);
+            }
+        }
+
+        GUILayout.EndScrollView();
+
+        GUILayout.EndArea();
     }
 }
