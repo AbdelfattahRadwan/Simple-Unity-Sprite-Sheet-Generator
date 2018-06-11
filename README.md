@@ -14,5 +14,5 @@ It can export to .png and .jpg but more formats will be available soon.
 
 1. Add more export options.
 1. Improve the look of the UI.
-1. Saving and loading of sprite sheets without exporting them. (using ZeroFormatter)
+1. Saving and loading of sprite sheets without exporting them. (using Json.NET)
 1. Grids and ability to rotate sprites in side the sheet before exporting.
