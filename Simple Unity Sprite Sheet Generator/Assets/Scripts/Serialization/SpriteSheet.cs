@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using Newtonsoft.Json;
 
 /// <summary>
 /// Represents a serializable sprite sheet.

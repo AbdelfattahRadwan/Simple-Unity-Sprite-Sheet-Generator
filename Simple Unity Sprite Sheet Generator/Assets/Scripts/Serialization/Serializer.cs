@@ -1,6 +1,7 @@
 ﻿using Newtonsoft.Json;
 using System.Collections.Generic;
 using System.IO;
+using System.Runtime.Serialization.Formatters.Binary;
 using UnityEngine;
 
 /// <summary>
@@ -22,11 +23,6 @@ public static class Serializer
     /// The path of the directory where output sprite sheets go.
     /// </summary>
     public static string SpriteSheetsOutputPath => "bin/output";
-
-    public static void RegisterZeroFormatterTypes()
-    {
-        ///TODO: Added serialization types...
-    }
 
     /// <summary>
     /// Loads all texture in jpg or png in the specified the specified directory.
@@ -77,18 +73,39 @@ public static class Serializer
     /// Saves a sprite sheet to the specified output directory.
     /// </summary>
     /// <param name="spriteSheet"></param>
-    public static void Save(SpriteSheet spriteSheet, string outputDirectory)
+    public static void Save(SpriteSheet spriteSheet, string outputDirectory, SheetSerializationFormat format)
     {
         if (spriteSheet == null || string.IsNullOrEmpty(outputDirectory))
         {
             return;
         }
 
-        var path = Path.Combine(outputDirectory, $"{spriteSheet.Name}.json");
+        var path = string.Empty;
 
-        var json = JsonConvert.SerializeObject(spriteSheet, Formatting.Indented);
+        if (format.Equals(SheetSerializationFormat.Json))
+        {
+            path = Path.Combine(outputDirectory, $"{spriteSheet.Name}.json");
 
-        File.WriteAllText(path, json);
+            var json = JsonConvert.SerializeObject(spriteSheet, Formatting.Indented);
+
+            File.WriteAllText(path, json);
+        }
+        else if (format.Equals(SheetSerializationFormat.Binary))
+        {
+            path = Path.Combine(outputDirectory, $"{spriteSheet.Name}.sussg");
+
+            var formatter = new BinaryFormatter();
+            
+            var bytes = new byte[0];
+            
+            using (var ms = new MemoryStream())
+            {
+                formatter.Serialize(ms, spriteSheet);
+                bytes = ms.ToArray();
+            }
+
+            File.WriteAllBytes(path, bytes);
+        }
     }
 
     /// <summary>
@@ -99,17 +116,45 @@ public static class Serializer
     {
         if (string.IsNullOrEmpty(filePath))
         {
-            spriteSheet = new SpriteSheet("empty", 512, 512);
+            spriteSheet = new SpriteSheet("broken_sheet", 64, 64);
             return;
         }
 
-        var json = File.ReadAllText(Path.Combine(filePath));
+        var extension = Path.GetExtension(filePath);
 
-        spriteSheet = JsonConvert.DeserializeObject<SpriteSheet>(json);
+        var isJson = string.Compare(extension, ".json", true) == 0;
+        var isBinary = string.Compare(extension, ".sussg", true) == 0;
 
-        foreach (var sprite in spriteSheet.SpriteNodes)
+        var loadedSheet = new SpriteSheet("new_sprite_sheet", 64, 64);
+
+        if (isJson)
         {
-            sprite.InitializeTextureFromData();
+            var json = File.ReadAllText(Path.Combine(filePath));
+
+            loadedSheet = JsonConvert.DeserializeObject<SpriteSheet>(json);
+
+            foreach (var sprite in loadedSheet.SpriteNodes)
+            {
+                sprite.InitializeTextureFromData();
+            }
         }
+        else if (isBinary)
+        {
+            var bytes = File.ReadAllBytes(filePath);
+
+            var formatter = new BinaryFormatter();
+            
+            using (var ms = new MemoryStream(bytes))
+            {
+                loadedSheet = formatter.Deserialize(ms) as SpriteSheet;
+            }
+
+            foreach (var sprite in loadedSheet.SpriteNodes)
+            {
+                sprite.InitializeTextureFromData();
+            }
+        }
+
+        spriteSheet = loadedSheet;
     }
 }

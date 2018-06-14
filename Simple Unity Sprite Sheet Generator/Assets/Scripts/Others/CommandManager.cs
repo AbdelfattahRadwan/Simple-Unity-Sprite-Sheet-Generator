@@ -1,7 +1,8 @@
 ﻿using System;
+using System.Globalization;
 
 /// <summary>
-/// A class that's used to execute editing commands by code instead of using the UI.
+/// A class that's used to execute editing commands by code instead of using the GUI.
 /// </summary>
 public static class CommandManager
 {
@@ -80,7 +81,7 @@ public static class CommandManager
 
         var spriteNodes = sheet.SpriteNodes;
 
-        var index = int.Parse(args[0]);
+        var index = int.Parse(args[0], NumberStyles.Any);
 
         spriteNodes.Add(new SpriteNode(textures[index].name, 0f, 0f, 1f, 1f, textures[index]));
     }
@@ -91,10 +92,10 @@ public static class CommandManager
 
         var spriteNodes = sheet.SpriteNodes;
 
-        var index = int.Parse(args[0]);
+        var index = int.Parse(args[0], NumberStyles.Any);
 
-        var x = float.Parse(args[1]);
-        var y = float.Parse(args[2]);
+        var x = float.Parse(args[1], NumberStyles.Any);
+        var y = float.Parse(args[2], NumberStyles.Any);
 
         spriteNodes[index].X = x;
         spriteNodes[index].Y = y;

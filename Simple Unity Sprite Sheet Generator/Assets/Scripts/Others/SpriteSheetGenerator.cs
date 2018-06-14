@@ -50,7 +50,7 @@ public static class SpriteSheetGenerator
             var currentNode = spriteNodes[i];
 
             // Get it's colors.
-            var colors = currentNode.Texture.GetPixels();
+            var colors = currentNode.texture.GetPixels();
 
             // The X position of the node (texture) in the texture sheet.
             var x1 = (int)currentNode.X;
@@ -59,10 +59,10 @@ public static class SpriteSheetGenerator
             var y1 = (int)currentNode.Y;
 
             // The width of the node (texture).
-            var x2 = currentNode.Texture.width;
+            var x2 = currentNode.texture.width;
 
             // The height of the node (texture).
-            var y2 = currentNode.Texture.height;
+            var y2 = currentNode.texture.height;
 
             // Invert the position of the texture on the Y axis.
             var invertedY = sheet.Height - y1 - y2;

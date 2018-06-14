@@ -203,6 +203,14 @@ public class MainWindow : MonoBehaviour
         showCommandManager = false;
     }
 
+    private void Update()
+    {
+        if (Input.GetKeyDown(KeyCode.F12))
+        {
+            showCommandManager = !showCommandManager;
+        }
+    }
+
     private void OnGUI()
     {
         GUI.skin = skin ?? GUI.skin;
@@ -340,9 +348,14 @@ public class MainWindow : MonoBehaviour
                 SpriteSheetGenerator.RenderToTexture(spriteSheet, spriteSheet.SpriteNodes, OutputImageFormat.PNG);
             }
 
-            if (GUILayout.Button("Save Sprite Sheet", options))
+            if (GUILayout.Button("Save As Json Data", options))
             {
-                Serializer.Save(spriteSheet, Serializer.SavesDirectoryPath);
+                Serializer.Save(spriteSheet, Serializer.SavesDirectoryPath, SheetSerializationFormat.Json);
+            }
+
+            if (GUILayout.Button("Save As Binary Data", options))
+            {
+                Serializer.Save(spriteSheet, Serializer.SavesDirectoryPath, SheetSerializationFormat.Binary);
             }
 
             if (GUILayout.Button("Load Sprite Sheet", options))
@@ -428,8 +441,8 @@ public class MainWindow : MonoBehaviour
             {
                 var currentNode = spriteSheet.SpriteNodes[i];
 
-                var w = currentNode.Texture.width;
-                var h = currentNode.Texture.height;
+                var w = currentNode.texture.width;
+                var h = currentNode.texture.height;
 
                 currentNode.X = Mathf.Clamp(currentNode.X, 0, spriteSheet.Width - w);
                 currentNode.Y = Mathf.Clamp(currentNode.Y, 0, spriteSheet.Height - h);
@@ -438,11 +451,11 @@ public class MainWindow : MonoBehaviour
                 {
                     x = currentNode.X,
                     y = currentNode.Y,
-                    width = currentNode.Texture.width,
-                    height = currentNode.Texture.height
+                    width = currentNode.texture.width,
+                    height = currentNode.texture.height
                 };
 
-                GUI.DrawTexture(nodesRect, currentNode.Texture);
+                GUI.DrawTexture(nodesRect, currentNode.texture);
 
                 var mousePosition = e.mousePosition;
 
@@ -530,7 +543,7 @@ public class MainWindow : MonoBehaviour
 
         if (draggedNode != null)
         {
-            var nodeTexture = draggedNode.Texture;
+            var nodeTexture = draggedNode.texture;
 
             var w = nodeTexture.width;
             var h = nodeTexture.height;
@@ -608,7 +621,7 @@ public class MainWindow : MonoBehaviour
     /// </summary>
     private void DrawCommandManagerWindow()
     {
-        commandWindowRect = GUILayout.Window(0, commandWindowRect, (id) =>
+        commandWindowRect = GUI.Window(0, commandWindowRect, (id) =>
         {
             GUILayout.Box("Input");
 
@@ -618,6 +631,8 @@ public class MainWindow : MonoBehaviour
             {
                 CommandManager.Execute(CommandManager.CommandInput);
             }
+
+            GUILayout.Box("Output");
 
             commandWindowVector = GUILayout.BeginScrollView(commandWindowVector);
 

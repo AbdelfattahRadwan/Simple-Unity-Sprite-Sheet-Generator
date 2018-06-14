@@ -1,6 +1,5 @@
-﻿using UnityEngine;
-using Newtonsoft.Json;
-using System;
+﻿using System;
+using UnityEngine;
 
 [Serializable]
 public class SpriteNode
@@ -31,22 +30,22 @@ public class SpriteNode
     public float YScale { get; set; }
 
     /// <summary>
-    /// The texture of this sprite node.
-    /// </summary>
-    [JsonIgnore] public Texture2D Texture { get; set; }
-
-    /// <summary>
     /// Represents the texture data of this sprite node's texture.
     /// </summary>
     public byte[] TextureData { get; set; }
+
+    /// <summary>
+    /// The texture of this sprite node.
+    /// </summary>
+    [NonSerialized] public Texture2D texture;
 
     /// <summary>
     /// Initialized the node's texture from it's texture byte data.
     /// </summary>
     public void InitializeTextureFromData()
     {
-        Texture = new Texture2D(32, 32, TextureFormat.RGBA32, false, false);
-        Texture.LoadImage(TextureData);
+        texture = new Texture2D(32, 32, TextureFormat.RGBA32, false, false);
+        texture.LoadImage(TextureData);
     }
 
     /// <summary>
@@ -65,7 +64,7 @@ public class SpriteNode
         Y = y;
         XScale = xScale;
         YScale = yScale;
-        Texture = texture;
+        this.texture = texture;
 
         TextureData = texture.EncodeToPNG();
     }
