@@ -44,7 +44,7 @@ public static class CommandManager
     /// </summary>
     public static void Execute(string command)
     {
-        var strings = command.Split(new string[2] { "cmd:", "args:" }, StringSplitOptions.RemoveEmptyEntries);
+        var strings = command.Split('\n');
 
         foreach (var str in strings)
         {
@@ -52,16 +52,18 @@ public static class CommandManager
         }
 
         var cmd = strings[0];
-        var args = strings[1];
+        var args = strings[1].Split('~');
 
         switch (cmd)
         {
             case addCommand:
-
+                CmdAdd(args);
                 break;
             case moveCommand:
+                CmdMove(args);
                 break;
             case deleteCommand:
+                CmdDelete(args);
                 break;
 
             default:
@@ -88,6 +90,14 @@ public static class CommandManager
         var sheet = MainWindow.Instance.GetOpenSpriteSheet();
 
         var spriteNodes = sheet.SpriteNodes;
+
+        var index = int.Parse(args[0]);
+
+        var x = float.Parse(args[1]);
+        var y = float.Parse(args[2]);
+
+        spriteNodes[index].X = x;
+        spriteNodes[index].Y = y;
     }
 
     private static void CmdDelete(string[] args)

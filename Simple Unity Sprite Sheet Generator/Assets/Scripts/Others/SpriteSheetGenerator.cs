@@ -33,13 +33,13 @@ public static class SpriteSheetGenerator
 
         // Create a new color array.
         var transparentBG = new Color[w * h];
-        
+
         // Loop through the array and populate it with a transparent color. 
         for (int xy = 0; xy < (w * h); xy++)
         {
             transparentBG[xy] = Color.clear;
         }
-        
+
         // Set the texture colors to the color array that we have just created.
         texture.SetPixels(transparentBG);
 
@@ -62,10 +62,13 @@ public static class SpriteSheetGenerator
             var x2 = currentNode.Texture.width;
 
             // The height of the node (texture).
-            var y2 = currentNode.Texture.height;            
+            var y2 = currentNode.Texture.height;
+
+            // Invert the position of the texture on the Y axis.
+            var invertedY = sheet.Height - y1 - y2;
 
             // Put the node (texture) onto the texture sheet surface.
-            texture.SetPixels(x1, y1, x2, y2, colors);
+            texture.SetPixels(x1, invertedY, x2, y2, colors);
         }
 
         // Apply the changes to the texture.

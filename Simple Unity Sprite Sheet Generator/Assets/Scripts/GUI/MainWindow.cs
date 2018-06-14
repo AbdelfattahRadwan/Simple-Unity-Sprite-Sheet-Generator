@@ -168,9 +168,14 @@ public class MainWindow : MonoBehaviour
     private bool showCommandManager;
 
     /// <summary>
-    /// The rect that the commands window use.
+    /// The rect that the commands window use. 
     /// </summary>
     private Rect commandWindowRect;
+
+    /// <summary>
+    /// The vector used to display the command window scroll view.
+    /// </summary>
+    private Vector2 commandWindowVector;
 
     private void Awake()
     {
@@ -191,6 +196,11 @@ public class MainWindow : MonoBehaviour
         newSpriteSheetHeight = string.Empty;
 
         currentWindow = Window.None;
+
+        commandWindowRect = new Rect(32f, 32f, 256f, 256f);
+
+        // The command manager is still WIP enable it at your own risk...
+        showCommandManager = false;
     }
 
     private void OnGUI()
@@ -222,6 +232,11 @@ public class MainWindow : MonoBehaviour
                 DrawBackgrounds(DefaultWindowRect);
                 DrawSavedFilesBrowser();
                 break;
+        }
+
+        if (showCommandManager)
+        {
+            DrawCommandManagerWindow();
         }
     }
 
@@ -376,7 +391,7 @@ public class MainWindow : MonoBehaviour
 
             if (i < textureCount)
             {
-                GUI.Box(textureListRect, loadedTextures[i].name);
+                GUI.Box(textureListRect, $"{i} - {loadedTextures[i].name}");
 
                 var mousePosition = e.mousePosition;
 
@@ -456,8 +471,6 @@ public class MainWindow : MonoBehaviour
             }
         }
 
-        GUI.matrix = Matrix4x4.identity;
-
         GUI.EndScrollView();
 
         GUI.EndGroup();
@@ -504,8 +517,6 @@ public class MainWindow : MonoBehaviour
                 }
             }
         }
-
-        GUI.matrix = Matrix4x4.identity;
     }
 
     /// <summary>
@@ -590,5 +601,32 @@ public class MainWindow : MonoBehaviour
         GUILayout.EndScrollView();
 
         GUILayout.EndArea();
+    }
+
+    /// <summary>
+    /// Used to draw the command manager GUI window.
+    /// </summary>
+    private void DrawCommandManagerWindow()
+    {
+        commandWindowRect = GUILayout.Window(0, commandWindowRect, (id) =>
+        {
+            GUILayout.Box("Input");
+
+            CommandManager.CommandInput = GUILayout.TextArea(CommandManager.CommandInput);
+
+            if (GUILayout.Button("Execute"))
+            {
+                CommandManager.Execute(CommandManager.CommandInput);
+            }
+
+            commandWindowVector = GUILayout.BeginScrollView(commandWindowVector);
+
+            GUILayout.Label(CommandManager.CommandLog);
+
+            GUILayout.EndScrollView();
+
+            GUI.DragWindow();
+        },
+        new GUIContent("Command Manager v1"));
     }
 }
