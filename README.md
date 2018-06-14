@@ -16,3 +16,5 @@ It can export to .png and .jpg but more formats will be available soon.
 1. Improve the look of the UI.
 1. Saving and loading of sprite sheets without exporting them. (using Json.NET)
 1. Grids and ability to rotate sprites in side the sheet before exporting.
+
+##### Please, keep in mind that I have created this project for my own use and to help test my skills out.
