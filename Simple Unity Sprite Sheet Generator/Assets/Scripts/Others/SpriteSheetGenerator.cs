@@ -49,8 +49,7 @@ public static class SpriteSheetGenerator
             // Get the current sprite node from the list.
             var currentNode = spriteNodes[i];
 
-            // Get it's colors.
-            var colors = currentNode.texture.GetPixels();
+            var currentNodeTexture = currentNode.texture;
 
             // The X position of the node (texture) in the texture sheet.
             var x1 = (int)currentNode.X;
@@ -58,17 +57,41 @@ public static class SpriteSheetGenerator
             // The Y position of the node (texture) in the texture sheet.
             var y1 = (int)currentNode.Y;
 
-            // The width of the node (texture).
-            var x2 = currentNode.texture.width;
+            // The unscaled width of the node (texture).
+            var normalW = (int)currentNode.Width;
 
-            // The height of the node (texture).
-            var y2 = currentNode.texture.height;
+            // The unscaled height of the node (texture).
+            var normalH = (int)currentNode.Height;
+
+            // The scaled width of the node (texture).
+            var scaledWidth = (int)(currentNode.Width * currentNode.XScale);
+
+            // The scaled height of the node (texture).
+            var scaledHeight = (int)(currentNode.Height * currentNode.YScale);
 
             // Invert the position of the texture on the Y axis.
-            var invertedY = sheet.Height - y1 - y2;
+            var invertedY = sheet.Height - y1 - scaledHeight;
+
+            // Make a copy of it's textures.
+            //var copy = new Texture2D(normalW, normalH, currentNodeTexture.format, false, false);
+
+            // Set it's contents to the orginal texture contents.
+            //copy.SetPixels(0, 0, copy.width, copy.height, currentNodeTexture.GetPixels());
+
+            // Apply the contents change.
+            //copy.Apply();
+
+            // Resize it.
+            //copy.Resize(scaledWidth, scaledHeight);
+
+            // Apply the resizing.
+            //copy.Apply();
+
+            // Get it's colors.
+            var colors = currentNodeTexture.GetPixels();
 
             // Put the node (texture) onto the texture sheet surface.
-            texture.SetPixels(x1, invertedY, x2, y2, colors);
+            texture.SetPixels(x1, invertedY, scaledWidth, scaledHeight, colors);
         }
 
         // Apply the changes to the texture.

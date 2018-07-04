@@ -54,6 +54,11 @@ public class MainWindow : MonoBehaviour
     private float ToolbarHeight => ScreenH / 24f;
 
     /// <summary>
+    /// The height of the inspector relative to the current screen height.
+    /// </summary>
+    private float InspectorWidth => ScreenH / 4f;
+
+    /// <summary>
     /// The default dimensions of a window.
     /// </summary>
     private Rect DefaultWindowRect => new Rect(8f, 16f + (ToolbarHeight), ScreenW - 16f, ScreenH - (ToolbarHeight + 24f));
@@ -71,12 +76,17 @@ public class MainWindow : MonoBehaviour
     /// <summary>
     /// The dimensions of the edtior view box.
     /// </summary>
-    private Rect EditorRect => new Rect((ScreenW / 4f) + 16f, 16f + (ToolbarHeight), (ScreenW - (ScreenW / 4f) - 24f), ScreenH - (ToolbarHeight + 24f));
+    private Rect EditorRect => new Rect((ScreenW / 4f) + 16f, 16f + (ToolbarHeight), (ScreenW - (ScreenW / 2f) - 24f), ScreenH - (ToolbarHeight + 24f));
 
     /// <summary>
-    /// The dimensions of the edtior scrollview box.
+    /// The dimensions of the editor scrollview box.
     /// </summary>
     private Rect EditorScrollViewRect => new Rect(0f, 0f, EditorRect.width, EditorRect.height);
+
+    /// <summary>
+    /// The dimensions of the insecptor view box.
+    /// </summary>
+    private Rect InspectorRect => new Rect(EditorRect.xMax + 8f, 16f + ToolbarHeight, (ScreenW / 4f) - 8f, ScreenH - (ToolbarHeight + 24f));
 
     /// <summary>
     /// The texture that's currently being dragged.
@@ -87,6 +97,11 @@ public class MainWindow : MonoBehaviour
     /// The sprite node that's currently being dragged.
     /// </summary>
     private SpriteNode draggedNode;
+
+    /// <summary>
+    /// The sprite node that's curretly selected.
+    /// </summary>
+    private SpriteNode selectedNode;
 
     /// <summary>
     /// Is the user dragging a texture or a sprite node?
@@ -116,7 +131,7 @@ public class MainWindow : MonoBehaviour
     /// <summary>
     /// The regular expression used to clear the number input strings from any invalid charaters.
     /// </summary>
-    private readonly string regexPattern = "[a-z-A-Z]";
+    private readonly string regexPattern = "[a-zA-Z]";
 
     /// <summary>
     /// The local regular expression handler.
@@ -168,14 +183,23 @@ public class MainWindow : MonoBehaviour
     private bool showCommandManager;
 
     /// <summary>
-    /// The rect that the commands window use. 
-    /// </summary>
-    private Rect commandWindowRect;
-
-    /// <summary>
     /// The vector used to display the command window scroll view.
     /// </summary>
     private Vector2 commandWindowVector;
+
+    private string xInputString;
+    private string yInputString;
+    private string xScaleInputString;
+    private string yScaleInputString;
+    private string widthInputString;
+    private string heightInputString;
+
+    private float parsedX;
+    private float parsedY;
+    private float parsedXScale;
+    private float parsedYScale;
+    private float parsedWidth;
+    private float parsedHeight;
 
     private void Awake()
     {
@@ -197,18 +221,8 @@ public class MainWindow : MonoBehaviour
 
         currentWindow = Window.None;
 
-        commandWindowRect = new Rect(32f, 32f, 256f, 256f);
-
         // The command manager is still WIP enable it at your own risk...
         showCommandManager = false;
-    }
-
-    private void Update()
-    {
-        if (Input.GetKeyDown(KeyCode.F12))
-        {
-            showCommandManager = !showCommandManager;
-        }
     }
 
     private void OnGUI()
@@ -224,8 +238,9 @@ public class MainWindow : MonoBehaviour
                 DrawDefaultScreen();
                 break;
             case Window.SheetDesigner:
-                DrawBackgrounds(ListRect, EditorRect);
+                DrawBackgrounds(ListRect, EditorRect, InspectorRect);
                 DrawSpriteList();
+                DrawSpriteNodeInspector();
                 DrawSpriteNodes();
                 HandleTexturesDragAndDrop();
                 HandleNodesDragAndDrop();
@@ -240,11 +255,6 @@ public class MainWindow : MonoBehaviour
                 DrawBackgrounds(DefaultWindowRect);
                 DrawSavedFilesBrowser();
                 break;
-        }
-
-        if (showCommandManager)
-        {
-            DrawCommandManagerWindow();
         }
     }
 
@@ -421,6 +431,54 @@ public class MainWindow : MonoBehaviour
     }
 
     /// <summary>
+    /// Used to draw the sprite inspector.
+    /// </summary>
+    private void DrawSpriteNodeInspector()
+    {
+        GUILayout.BeginArea(InspectorRect);
+
+        GUILayout.Box("Inspector");
+
+        if (selectedNode != null)
+        {
+            var regex = new Regex(regexPattern);
+
+            xInputString = regex.Replace(xInputString, string.Empty);
+            yInputString = regex.Replace(yInputString, string.Empty);
+            xScaleInputString = regex.Replace(xScaleInputString, string.Empty);
+            yScaleInputString = regex.Replace(yScaleInputString, string.Empty);
+            widthInputString = regex.Replace(widthInputString, string.Empty);
+            heightInputString = regex.Replace(heightInputString, string.Empty);
+
+            GUILayout.Box($"X = {selectedNode.X}");
+            xInputString = GUILayout.TextField(xInputString);
+            selectedNode.X = float.TryParse(xInputString, out parsedX) ? parsedX : selectedNode.X;
+
+            GUILayout.Box($"Y = {selectedNode.Y}");
+            yInputString = GUILayout.TextField(yInputString);
+            selectedNode.Y = float.TryParse(yInputString, out parsedY) ? parsedY : selectedNode.Y;
+
+            GUILayout.Box($"X Scale = {selectedNode.XScale}");
+            xScaleInputString = GUILayout.TextField(xScaleInputString);
+            selectedNode.XScale = float.TryParse(xScaleInputString, out parsedXScale) ? parsedXScale : selectedNode.XScale;
+
+            GUILayout.Box($"Y Scale = {selectedNode.YScale}");
+            yScaleInputString = GUILayout.TextField(yScaleInputString);
+            selectedNode.YScale = float.TryParse(yScaleInputString, out parsedYScale) ? parsedYScale : selectedNode.YScale;
+
+            GUILayout.Box($"Width = {selectedNode.Width}");
+            widthInputString = GUILayout.TextField(widthInputString);
+            selectedNode.Width = float.TryParse(widthInputString, out parsedWidth) ? parsedWidth : selectedNode.X;
+
+            GUILayout.Box($"Height = {selectedNode.Height}");
+            heightInputString = GUILayout.TextField(heightInputString);
+            selectedNode.Height = float.TryParse(heightInputString, out parsedHeight) ? parsedHeight : selectedNode.Height;
+        }
+
+        GUILayout.EndArea();
+    }
+
+    /// <summary>
     /// Used to draw the sprite editor design nodes.
     /// </summary>
     private void DrawSpriteNodes()
@@ -441,8 +499,10 @@ public class MainWindow : MonoBehaviour
             {
                 var currentNode = spriteSheet.SpriteNodes[i];
 
-                var w = currentNode.texture.width;
-                var h = currentNode.texture.height;
+                var w = currentNode.Width;
+                var h = currentNode.Height;
+                var xs = currentNode.XScale;
+                var ys = currentNode.YScale;
 
                 currentNode.X = Mathf.Clamp(currentNode.X, 0, spriteSheet.Width - w);
                 currentNode.Y = Mathf.Clamp(currentNode.Y, 0, spriteSheet.Height - h);
@@ -451,8 +511,8 @@ public class MainWindow : MonoBehaviour
                 {
                     x = currentNode.X,
                     y = currentNode.Y,
-                    width = currentNode.texture.width,
-                    height = currentNode.texture.height
+                    width = w * xs,
+                    height = h * ys
                 };
 
                 GUI.DrawTexture(nodesRect, currentNode.texture);
@@ -466,14 +526,33 @@ public class MainWindow : MonoBehaviour
                         lastNodeX = currentNode.X;
                         lastNodeY = currentNode.Y;
 
+                        if (selectedNode != null && selectedNode == currentNode)
+                        {
+                            selectedNode = null;
+                        }
+
                         draggedNode = currentNode;
 
                         spriteSheet.SpriteNodes.RemoveAt(i);
                     }
 
-                    if (e.type.Equals(EventType.MouseDown) && e.button == 1 && IsPressingShift)
+                    if (e.type.Equals(EventType.MouseDown))
                     {
-                        spriteSheet.SpriteNodes.RemoveAt(i);
+                        if (e.button == 0)
+                        {
+                            xInputString = currentNode.X.ToString();
+                            yInputString = currentNode.Y.ToString();
+                            xScaleInputString = currentNode.XScale.ToString();
+                            yScaleInputString = currentNode.YScale.ToString();
+                            widthInputString = currentNode.Width.ToString();
+                            heightInputString = currentNode.Height.ToString();
+
+                            selectedNode = currentNode;
+                        }
+                        else if (e.button == 1 && IsPressingShift)
+                        {
+                            spriteSheet.SpriteNodes.RemoveAt(i);
+                        }
                     }
 
                     if (Input.GetMouseButton(1) && IsPressingShift && IsPressingCtrl)
@@ -498,7 +577,7 @@ public class MainWindow : MonoBehaviour
 
         var mousePosition = e.mousePosition;
 
-        if (draggedTexture)
+        if (draggedTexture != null)
         {
             var w = draggedTexture.width;
             var h = draggedTexture.height;
@@ -520,7 +599,7 @@ public class MainWindow : MonoBehaviour
                     var relativeX = (int)(((mousePosition.x - EditorRect.x) + editorVector.x) - w / 2f);
                     var relativeY = (int)(((mousePosition.y - EditorRect.y) + editorVector.y) - h / 2f);
 
-                    spriteSheet.SpriteNodes.Add(new SpriteNode(draggedTexture.name, relativeX, relativeY, 1f, 1f, draggedTexture));
+                    spriteSheet.SpriteNodes.Add(new SpriteNode(draggedTexture.name, relativeX, relativeY, 1f, 1f, w, h, draggedTexture));
 
                     draggedTexture = null;
                 }
@@ -545,15 +624,17 @@ public class MainWindow : MonoBehaviour
         {
             var nodeTexture = draggedNode.texture;
 
-            var w = nodeTexture.width;
-            var h = nodeTexture.height;
+            var w = draggedNode.Width;
+            var h = draggedNode.Height;
+            var xs = draggedNode.XScale;
+            var ys = draggedNode.YScale;
 
             var drawingRect = new Rect()
             {
-                x = mousePosition.x - (w / 2f),
-                y = mousePosition.y - (h / 2f),
-                width = w,
-                height = h
+                x = mousePosition.x - ((w * xs) / 2f),
+                y = mousePosition.y - ((h * ys) / 2f),
+                width = w * xs,
+                height = h * ys
             };
 
             GUI.DrawTexture(drawingRect, nodeTexture);
@@ -562,16 +643,16 @@ public class MainWindow : MonoBehaviour
             {
                 if (EditorRect.Contains(mousePosition))
                 {
-                    var relativeX = Mathf.FloorToInt(((mousePosition.x - EditorRect.x) + editorVector.x) - w / 2f);
-                    var relativeY = Mathf.FloorToInt(((mousePosition.y - EditorRect.y) + editorVector.y) - h / 2f);
+                    var relativeX = Mathf.FloorToInt(((mousePosition.x - EditorRect.x) + editorVector.x) - (w * xs) / 2f);
+                    var relativeY = Mathf.FloorToInt(((mousePosition.y - EditorRect.y) + editorVector.y) - (h * ys) / 2f);
 
-                    spriteSheet.SpriteNodes.Add(new SpriteNode(nodeTexture.name, relativeX, relativeY, 1f, 1f, nodeTexture));
+                    spriteSheet.SpriteNodes.Add(new SpriteNode(nodeTexture.name, relativeX, relativeY, xs, ys, w, h, nodeTexture));
 
                     draggedNode = null;
                 }
                 else
                 {
-                    spriteSheet.SpriteNodes.Add(new SpriteNode(nodeTexture.name, lastNodeX, lastNodeY, 1f, 1f, nodeTexture));
+                    spriteSheet.SpriteNodes.Add(new SpriteNode(nodeTexture.name, lastNodeX, lastNodeY, xs, ys, w, h, nodeTexture));
 
                     draggedNode = null;
                 }
@@ -614,34 +695,5 @@ public class MainWindow : MonoBehaviour
         GUILayout.EndScrollView();
 
         GUILayout.EndArea();
-    }
-
-    /// <summary>
-    /// Used to draw the command manager GUI window.
-    /// </summary>
-    private void DrawCommandManagerWindow()
-    {
-        commandWindowRect = GUI.Window(0, commandWindowRect, (id) =>
-        {
-            GUILayout.Box("Input");
-
-            CommandManager.CommandInput = GUILayout.TextArea(CommandManager.CommandInput);
-
-            if (GUILayout.Button("Execute"))
-            {
-                CommandManager.Execute(CommandManager.CommandInput);
-            }
-
-            GUILayout.Box("Output");
-
-            commandWindowVector = GUILayout.BeginScrollView(commandWindowVector);
-
-            GUILayout.Label(CommandManager.CommandLog);
-
-            GUILayout.EndScrollView();
-
-            GUI.DragWindow();
-        },
-        new GUIContent("Command Manager v1"));
     }
 }

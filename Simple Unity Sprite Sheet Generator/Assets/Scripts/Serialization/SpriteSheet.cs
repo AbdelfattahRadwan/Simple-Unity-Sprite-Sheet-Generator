@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using UnityEngine;
 
 /// <summary>
 /// Represents a serializable sprite sheet.

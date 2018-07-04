@@ -135,7 +135,7 @@ public static class Serializer
 
             foreach (var sprite in loadedSheet.SpriteNodes)
             {
-                sprite.InitializeTextureFromData();
+                sprite.InitializeTexture();
             }
         }
         else if (isBinary)
@@ -151,7 +151,7 @@ public static class Serializer
 
             foreach (var sprite in loadedSheet.SpriteNodes)
             {
-                sprite.InitializeTextureFromData();
+                sprite.InitializeTexture();
             }
         }
 

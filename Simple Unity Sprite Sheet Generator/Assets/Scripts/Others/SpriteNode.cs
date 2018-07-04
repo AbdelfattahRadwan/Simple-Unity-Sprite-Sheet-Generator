@@ -30,6 +30,26 @@ public class SpriteNode
     public float YScale { get; set; }
 
     /// <summary>
+    /// The width of this sprite node.
+    /// </summary>
+    public float Width { get; set; }
+
+    /// <summary>
+    /// The height of this sprite node.
+    /// </summary>
+    public float Height { get; set; }
+
+    /// <summary>
+    /// The default width of this sprite node.
+    /// </summary>
+    public float DefaultWidth => texture != null ? texture.width : 0f;
+
+    /// <summary>
+    /// The default height of this sprite node.
+    /// </summary>
+    public float DefaultHeight => texture != null ? texture.height : 0f;
+
+    /// <summary>
     /// Represents the texture data of this sprite node's texture.
     /// </summary>
     public byte[] TextureData { get; set; }
@@ -42,7 +62,7 @@ public class SpriteNode
     /// <summary>
     /// Initialized the node's texture from it's texture byte data.
     /// </summary>
-    public void InitializeTextureFromData()
+    public void InitializeTexture()
     {
         texture = new Texture2D(32, 32, TextureFormat.RGBA32, false, false);
         texture.LoadImage(TextureData);
@@ -57,7 +77,7 @@ public class SpriteNode
     /// <param name="xScale"></param>
     /// <param name="yScale"></param>
     /// <param name="texture"></param>
-    public SpriteNode(string name, float x, float y, float xScale, float yScale, Texture2D texture)
+    public SpriteNode(string name, float x, float y, float xScale, float yScale, float w, float h, Texture2D texture)
     {
         Name = name;
         X = x;
@@ -65,6 +85,8 @@ public class SpriteNode
         XScale = xScale;
         YScale = yScale;
         this.texture = texture;
+        Width = w;
+        Height = h;
 
         TextureData = texture.EncodeToPNG();
     }
